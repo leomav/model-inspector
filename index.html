@@ -32,6 +32,9 @@
         background: rgba(0, 0, 0, 0.3);
         align-items: center;
       }
+      .controls.hidden {
+        display: none;
+      }
       .controls button {
         padding: 6px 10px;
         border-radius: 6px;
@@ -85,10 +88,19 @@
         throw new Error("Missing file URL");
       }
 
+      // Read showControls param (defaults to true if not specified)
+      const showControls = urlParams.get("showControls") !== "false";
+
       const mv = document.getElementById("mv");
       const info = document.getElementById("info");
       const btnReset = document.getElementById("btn-reset");
       const btnToggle = document.getElementById("btn-toggle-rotate");
+      const controlsDiv = document.querySelector(".controls");
+
+      // Hide controls if showControls param is false
+      if (!showControls) {
+        controlsDiv.classList.add("hidden");
+      }
 
       // Set model URL if provided
       if (fileUrl) {

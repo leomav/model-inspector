@@ -23,14 +23,14 @@
       import { OrbitControls } from "https://unpkg.com/three@0.155.0/examples/jsm/controls/OrbitControls.js?module";
 
       // Parse file URL from query params
-      const fileUrl =
-        "https://leomav.github.io/demo-assets/pc14/2015_34_1121_32.glb";
-      // const urlParams = new URLSearchParams(window.location.search);
-      // const fileUrl = urlParams.get("file");
-      // if (!fileUrl) {
-      //   alert("Missing file URL (?file=...)");
-      //   throw new Error("Missing file URL");
-      // }
+      // const fileUrl =
+      //   "https://leomav.github.io/demo-assets/pc14/2015_34_1121_32.glb";
+      const urlParams = new URLSearchParams(window.location.search);
+      const fileUrl = urlParams.get("file");
+      if (!fileUrl) {
+        alert("Missing file URL (?file=...)");
+        throw new Error("Missing file URL");
+      }
 
       // Scene setup
       const scene = new THREE.Scene();

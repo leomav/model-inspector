@@ -75,11 +75,15 @@
     </div>
 
     <script>
-      const fileUrl =
-        "https://leomav.github.io/demo-assets/pc14/2015_34_1121_32.glb";
+      // const fileUrl =
+      //   "https://leomav.github.io/demo-assets/pc14/2015_34_1121_32.glb";
       // // Helper: read ?file= param
-      // const params = new URLSearchParams(window.location.search);
-      // const fileUrl = params.get("file") || "";
+      const urlParams = new URLSearchParams(window.location.search);
+      const fileUrl = urlParams.get("file");
+      if (!fileUrl) {
+        alert("Missing file URL (?file=...)");
+        throw new Error("Missing file URL");
+      }
 
       const mv = document.getElementById("mv");
       const info = document.getElementById("info");

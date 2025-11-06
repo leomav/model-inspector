@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>3D Inspector</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #111;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from "https://unpkg.com/three@0.155.0/build/three.module.js?module";
+      import { GLTFLoader } from "https://unpkg.com/three@0.155.0/examples/jsm/loaders/GLTFLoader.js?module";
+      import { OrbitControls } from "https://unpkg.com/three@0.155.0/examples/jsm/controls/OrbitControls.js?module";
+
+      // Parse file URL from query params
+      const fileUrl =
+        "https://leomav.github.io/demo-assets/pc14/2015_34_1121_32.glb";
+      // const urlParams = new URLSearchParams(window.location.search);
+      // const fileUrl = urlParams.get("file");
+      // if (!fileUrl) {
+      //   alert("Missing file URL (?file=...)");
+      //   throw new Error("Missing file URL");
+      // }
+
+      // Scene setup
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        60,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(2, 2, 2);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.addEventListener("change", () => {
+        // Send camera info to parent when user moves or zooms
+        window.parent.postMessage(
+          {
+            type: "cameraChange",
+            position: camera.position,
+            target: controls.target,
+          },
+          "*"
+        );
+      });
+
+      // Lighting
+      scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(5, 5, 5);
+      scene.add(dirLight);
+
+      // Load model
+      const loader = new GLTFLoader();
+      loader.load(fileUrl, (gltf) => {
+        const model = gltf.scene;
+
+        scene.add(model);
+
+        // Auto-center and scale
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3()).length();
+        const center = box.getCenter(new THREE.Vector3());
+        model.position.sub(center);
+        camera.position.set(size / 2, size / 2, size / 2);
+        controls.update();
+      });
+
+      // Handle resize
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Render loop
+      function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+      }
+      animate();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Model Viewer - 3D Inspector</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: #111;
+        color: #eee;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+      }
+      .container {
+        height: 100vh;
+        display: grid;
+        grid-template-rows: 1fr auto;
+      }
+      model-viewer {
+        width: 100%;
+        height: 100%;
+        --poster-color: transparent;
+        background: #111;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        align-items: center;
+      }
+      .controls button {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+        background: #222;
+        color: white;
+        cursor: pointer;
+      }
+      .controls .info {
+        margin-left: 8px;
+        font-size: 13px;
+        opacity: 0.9;
+      }
+    </style>
+
+    <!-- model-viewer (module build) -->
+    <script
+      type="module"
+      src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"
+    ></script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- model-viewer: camera-controls enables user rotation/zoom -->
+      <model-viewer
+        id="mv"
+        camera-controls
+        auto-rotate
+        exposure="1"
+        shadow-intensity="0.5"
+        style="width: 100%; height: 100%"
+        alt="3D model viewer"
+      >
+      </model-viewer>
+
+      <div class="controls">
+        <button id="btn-reset">Reset Camera</button>
+        <button id="btn-toggle-rotate">Toggle Auto-Rotate</button>
+        <div class="info" id="info">Loading model...</div>
+      </div>
+    </div>
+
+    <script>
+      const fileUrl =
+        "https://leomav.github.io/demo-assets/pc14/2015_34_1121_32.glb";
+      // // Helper: read ?file= param
+      // const params = new URLSearchParams(window.location.search);
+      // const fileUrl = params.get("file") || "";
+
+      const mv = document.getElementById("mv");
+      const info = document.getElementById("info");
+      const btnReset = document.getElementById("btn-reset");
+      const btnToggle = document.getElementById("btn-toggle-rotate");
+
+      // Set model URL if provided
+      if (fileUrl) {
+        mv.setAttribute("src", fileUrl);
+      } else {
+        info.textContent = "No model provided. Use ?file=https://.../model.glb";
+      }
+
+      // When the model has loaded, update UI
+      mv.addEventListener("load", (ev) => {
+        info.textContent = "Model loaded. Interact to move/zoom.";
+        // Send initial camera state
+        sendCameraChange("load");
+      });
+
+      // camera-change event is fired when camera or FOV changes.
+      // event.detail has camera state (position/target/fov) per docs.
+      mv.addEventListener("camera-change", (ev) => {
+        // ev.detail looks like: {source: "user-interaction"|"program", position: {x,y,z}, target: {x,y,z}, fieldOfView: ...}
+        sendCameraChange("camera-change", ev.detail);
+      });
+
+      // Send camera/state snapshot to parent window
+      function sendCameraChange(reason, detail = null) {
+        // Build a serializable message; DOM objects are not transferable as-is
+        let payload = { type: "cameraChange", reason: reason };
+
+        // Try to read camera data from event detail if present; otherwise query attributes
+        if (detail) {
+          payload.detail = detail;
+        } else {
+          // Best-effort: read camera-orbit and field-of-view attributes (strings)
+          payload.cameraOrbit = mv.getAttribute("camera-orbit") || null;
+          payload.fieldOfView = mv.getAttribute("field-of-view") || null;
+        }
+
+        // DEV: for local testing it's okay to use '*' — in production replace with your parent origin.
+        window.parent.postMessage(payload, "*");
+      }
+
+      // Parent -> iframe messages handler:
+      // Example accepted messages:
+      // { type: 'setCameraOrbit', orbit: '1rad 0.6rad 2m' }
+      // { type: 'resetCamera' }
+      // { type: 'setAutoRotate', enabled: true/false }
+      window.addEventListener("message", (event) => {
+        // In production, verify event.origin is allowed:
+        // if (event.origin !== 'https://your-main-app.com') return;
+
+        const data = event.data || {};
+        if (!data.type) return;
+
+        switch (data.type) {
+          case "setCameraOrbit":
+            if (typeof data.orbit === "string") {
+              // setAttribute is safe for declarative control
+              mv.setAttribute("camera-orbit", data.orbit);
+              // "camera-change" may not fire for programmatic jump, let's notify parent anyway
+              sendCameraChange("setCameraOrbit", { cameraOrbit: data.orbit });
+            }
+            break;
+
+          case "resetCamera":
+            // Remove any stored orbit to let model-viewer revert to default framing.
+            mv.removeAttribute("camera-orbit");
+            // Notify parent that camera reset happened
+            sendCameraChange("resetCamera");
+            break;
+
+          case "setAutoRotate":
+            if (data.enabled) mv.setAttribute("auto-rotate", "");
+            else mv.removeAttribute("auto-rotate");
+            sendCameraChange("setAutoRotate", { enabled: !!data.enabled });
+            break;
+
+          default:
+            // unknown message
+            break;
+        }
+      });
+
+      // Small UI controls for manual testing in the iframe
+      btnReset.addEventListener("click", () => {
+        // Reset the camera to default framing by removing custom orbit
+        mv.removeAttribute("camera-orbit");
+        // The component often animates to the default view; notify parent
+        sendCameraChange("ui-reset");
+      });
+
+      btnToggle.addEventListener("click", () => {
+        if (mv.hasAttribute("auto-rotate")) {
+          mv.removeAttribute("auto-rotate");
+          btnToggle.textContent = "Enable Auto-Rotate";
+          sendCameraChange("ui-auto-rotate", { enabled: false });
+        } else {
+          mv.setAttribute("auto-rotate", "");
+          btnToggle.textContent = "Disable Auto-Rotate";
+          sendCameraChange("ui-auto-rotate", { enabled: true });
+        }
+      });
+
+      // Optional: show errors to parent and update UI
+      mv.addEventListener("error", (e) => {
+        const err = e?.detail || { message: "Unknown error" };
+        info.textContent = "Error loading model";
+        window.parent.postMessage({ type: "viewerError", error: err }, "*");
+      });
+
+      // Inform parent that the viewer has initialized (iframe ready)
+      window.parent.postMessage({ type: "viewerReady" }, "*");
+    </script>
+  </body>
+</html>

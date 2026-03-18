@@ -210,7 +210,6 @@ export async function initEditor({
     if (event.source === window) return;
     const { type, ...data } = event.data || {};
     if (!type || !model) return;
-    console.log("Received message:", type, data);
     switch (type) {
       case "setPosition":
         model.position.set(data.x ?? 0, data.y ?? 0, data.z ?? 0);

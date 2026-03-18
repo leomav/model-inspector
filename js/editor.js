@@ -99,6 +99,8 @@ export async function initEditor({
   });
 
   // Controls bar
+  const controlsHidden = Array.isArray(visibleControls) && visibleControls.length === 0;
+
   const infoEl = document.createElement("div");
   infoEl.className = "info";
   if (!controlsHidden) infoEl.textContent = "Loading model...";
@@ -117,7 +119,6 @@ export async function initEditor({
     modeButtons[mode] = btn;
     controlsDiv.appendChild(btn);
   }
-  const controlsHidden = Array.isArray(visibleControls) && visibleControls.length === 0;
   if (!controlsHidden) controlsDiv.appendChild(infoEl);
   if (!controlsHidden && showDimensions) controlsDiv.appendChild(sizeEl);
   setGizmoMode(TRANSFORM_MODES.translate);

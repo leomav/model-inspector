@@ -1,6 +1,12 @@
 import { postUp, showError } from "./messaging.js";
 
-export async function initEditor({ fileUrl, viewport, controlsDiv }) {
+const TRANSFORM_MODES = {
+  translate: "translate",
+  rotate: "rotate",
+  scale: "scale",
+};
+
+export async function initEditor({ fileUrl, viewport, controlsDiv, showDimensions }) {
   const [THREE, { GLTFLoader }, { OrbitControls }, { TransformControls }] =
     await Promise.all([
       import("three"),
@@ -37,7 +43,7 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
   // Controls
   const orbitControls = new OrbitControls(camera, renderer.domElement);
   const transformControls = new TransformControls(camera, renderer.domElement);
-  transformControls.setMode("translate");
+  transformControls.setMode(TRANSFORM_MODES.translate);
   const gizmo = transformControls.getHelper();
   scene.add(gizmo);
 
@@ -46,22 +52,33 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
     orbitControls.enabled = !e.value;
   });
 
-  // Post transformChange on drag end
-  renderer.domElement.addEventListener("pointerup", () => {
-    if (!model) return;
+  let baseDims = null;
+  const fmt = (n) => n.toFixed(3);
+
+  function updateSizeDisplay(pivot) {
+    if (!baseDims) return;
+    sizeEl.textContent = `Height: ${fmt(baseDims.y * pivot.scale.y)}, Width: ${fmt(baseDims.x * pivot.scale.x)}, Depth: ${fmt(baseDims.z * pivot.scale.z)}`;
+  }
+
+  transformControls.addEventListener("objectChange", () => {
+    if (transformControls.mode === TRANSFORM_MODES.scale && model) {
+      updateSizeDisplay(model);
+    }
+  });
+
+  // Post transformChange only when a gizmo drag actually ends
+  transformControls.addEventListener("dragging-changed", (e) => {
+    if (e.value || !model) return; // e.value=true means drag started, false means ended
     postUp({
       type: "transformChange",
-      position: {
-        x: model.position.x,
-        y: model.position.y,
-        z: model.position.z,
-      },
-      rotation: {
-        x: model.rotation.x,
-        y: model.rotation.y,
-        z: model.rotation.z,
-      },
-      scale: { x: model.scale.x, y: model.scale.y, z: model.scale.z },
+      position: { x: model.position.x, y: model.position.y, z: model.position.z },
+      rotation: { x: model.rotation.x, y: model.rotation.y, z: model.rotation.z },
+      scale:    { x: model.scale.x,    y: model.scale.y,    z: model.scale.z },
+      dimensions: baseDims ? {
+        width:  baseDims.x * model.scale.x,
+        height: baseDims.y * model.scale.y,
+        depth:  baseDims.z * model.scale.z,
+      } : null,
     });
   });
 
@@ -73,7 +90,7 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
   const sizeEl = document.createElement("div");
   sizeEl.className = "info";
 
-  const modes = ["translate", "rotate", "scale"];
+  const modes = Object.values(TRANSFORM_MODES);
   const modeButtons = {};
   for (const mode of modes) {
     const btn = document.createElement("button");
@@ -83,8 +100,8 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
     controlsDiv.appendChild(btn);
   }
   controlsDiv.appendChild(infoEl);
-  controlsDiv.appendChild(sizeEl);
-  setGizmoMode("translate");
+  if (showDimensions) controlsDiv.appendChild(sizeEl);
+  setGizmoMode(TRANSFORM_MODES.translate);
 
   function setGizmoMode(mode) {
     transformControls.setMode(mode);
@@ -108,7 +125,7 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
       const center = box.getCenter(new THREE.Vector3());
       mesh.position.sub(center);
 
-      const fmt = (n) => n.toFixed(3);
+      baseDims = dims.clone();
       sizeEl.textContent = `Height: ${fmt(dims.y)}, Width: ${fmt(dims.x)}, Depth: ${fmt(dims.z)}`;
 
       const pivot = new THREE.Group();
@@ -134,6 +151,14 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
       transformControls.setSize(1);
       model = pivot;
       infoEl.textContent = "Model loaded. Use gizmo to transform.";
+
+      postUp({
+        type: "transformChange",
+        position: { x: pivot.position.x, y: pivot.position.y, z: pivot.position.z },
+        rotation: { x: pivot.rotation.x, y: pivot.rotation.y, z: pivot.rotation.z },
+        scale:    { x: pivot.scale.x,    y: pivot.scale.y,    z: pivot.scale.z },
+        dimensions: { width: dims.x, height: dims.y, depth: dims.z },
+      });
     },
     undefined,
     (err) =>

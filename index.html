@@ -109,6 +109,7 @@
       const fileUrl = urlParams.get("file");
       const showcase = urlParams.get("showcase") === "true";
       const showControls = urlParams.get("showControls") !== "false";
+      const showDimensions = urlParams.get("showDimensions") === "true";
 
       const viewport = document.getElementById("viewport");
       const controlsDiv = document.getElementById("controls");
@@ -125,7 +126,7 @@
 
       postUp({ type: "viewerReady" });
 
-      const ctx = { fileUrl, viewport, controlsDiv };
+      const ctx = { fileUrl, viewport, controlsDiv, showDimensions };
       if (showcase) {
         await initShowcase(ctx);
       } else {

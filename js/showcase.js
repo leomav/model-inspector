@@ -1,4 +1,4 @@
-import { postUp, showError } from "./messaging.js";
+import { postUp, showError, showLoader } from "./messaging.js";
 
 export async function initShowcase({ fileUrl, viewport, controlsDiv }) {
   // Load model-viewer only in showcase mode
@@ -20,6 +20,7 @@ export async function initShowcase({ fileUrl, viewport, controlsDiv }) {
   mv.setAttribute("alt", "3D model viewer");
   mv.style.cssText = "width:100%;height:100%";
   viewport.appendChild(mv);
+  const hideLoader = showLoader(viewport);
 
   // Controls bar
   const infoEl = document.createElement("div");
@@ -36,6 +37,7 @@ export async function initShowcase({ fileUrl, viewport, controlsDiv }) {
 
   // Events
   mv.addEventListener("load", () => {
+    hideLoader();
     infoEl.textContent = "Model loaded.";
     sendCameraChange("load");
   });
@@ -47,6 +49,7 @@ export async function initShowcase({ fileUrl, viewport, controlsDiv }) {
   });
 
   mv.addEventListener("error", () => {
+    hideLoader();
     showError(viewport, "Error loading model");
   });
 

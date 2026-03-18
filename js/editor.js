@@ -1,4 +1,4 @@
-import { postUp, showError } from "./messaging.js";
+import { postUp, showError, showLoader } from "./messaging.js";
 
 const TRANSFORM_MODES = {
   translate: "translate",
@@ -99,7 +99,8 @@ export async function initEditor({
   });
 
   // Controls bar
-  const controlsHidden = Array.isArray(visibleControls) && visibleControls.length === 0;
+  const controlsHidden =
+    Array.isArray(visibleControls) && visibleControls.length === 0;
 
   const infoEl = document.createElement("div");
   infoEl.className = "info";
@@ -131,11 +132,14 @@ export async function initEditor({
   }
 
   // Load model
+  const hideLoader = showLoader(viewport);
+
   let model = null;
   const loader = new GLTFLoader();
   loader.load(
     fileUrl,
     (gltf) => {
+      hideLoader();
       const mesh = gltf.scene;
 
       // Center mesh inside a pivot so it sits at world origin
@@ -170,7 +174,8 @@ export async function initEditor({
       transformControls.attach(pivot);
       transformControls.setSize(1);
       model = pivot;
-      if (!controlsHidden) infoEl.textContent = "Model loaded. Use gizmo to transform.";
+      if (!controlsHidden)
+        infoEl.textContent = "Model loaded. Use gizmo to transform.";
 
       postUp({ type: "modelLoaded" });
 
@@ -191,8 +196,10 @@ export async function initEditor({
       });
     },
     undefined,
-    (err) =>
-      showError(viewport, "Error loading model: " + (err?.message || err)),
+    (err) => {
+      hideLoader();
+      showError(viewport, "Error loading model: " + (err?.message || err));
+    },
   );
 
   // Resize handler

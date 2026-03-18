@@ -6,7 +6,13 @@ const TRANSFORM_MODES = {
   scale: "scale",
 };
 
-export async function initEditor({ fileUrl, viewport, controlsDiv, showDimensions }) {
+export async function initEditor({
+  fileUrl,
+  viewport,
+  controlsDiv,
+  showDimensions,
+  visibleControls = Object.values(TRANSFORM_MODES),
+}) {
   const [THREE, { GLTFLoader }, { OrbitControls }, { TransformControls }] =
     await Promise.all([
       import("three"),
@@ -71,14 +77,24 @@ export async function initEditor({ fileUrl, viewport, controlsDiv, showDimension
     if (e.value || !model) return; // e.value=true means drag started, false means ended
     postUp({
       type: "transformChange",
-      position: { x: model.position.x, y: model.position.y, z: model.position.z },
-      rotation: { x: model.rotation.x, y: model.rotation.y, z: model.rotation.z },
-      scale:    { x: model.scale.x,    y: model.scale.y,    z: model.scale.z },
-      dimensions: baseDims ? {
-        width:  baseDims.x * model.scale.x,
-        height: baseDims.y * model.scale.y,
-        depth:  baseDims.z * model.scale.z,
-      } : null,
+      position: {
+        x: model.position.x,
+        y: model.position.y,
+        z: model.position.z,
+      },
+      rotation: {
+        x: model.rotation.x,
+        y: model.rotation.y,
+        z: model.rotation.z,
+      },
+      scale: { x: model.scale.x, y: model.scale.y, z: model.scale.z },
+      dimensions: baseDims
+        ? {
+            width: baseDims.x * model.scale.x,
+            height: baseDims.y * model.scale.y,
+            depth: baseDims.z * model.scale.z,
+          }
+        : null,
     });
   });
 
@@ -93,6 +109,8 @@ export async function initEditor({ fileUrl, viewport, controlsDiv, showDimension
   const modes = Object.values(TRANSFORM_MODES);
   const modeButtons = {};
   for (const mode of modes) {
+    // null = show all; array = show only listed modes
+    if (visibleControls !== null && !visibleControls.includes(mode)) continue;
     const btn = document.createElement("button");
     btn.textContent = mode.charAt(0).toUpperCase() + mode.slice(1);
     btn.addEventListener("click", () => setGizmoMode(mode));
@@ -152,11 +170,21 @@ export async function initEditor({ fileUrl, viewport, controlsDiv, showDimension
       model = pivot;
       infoEl.textContent = "Model loaded. Use gizmo to transform.";
 
+      postUp({ type: "modelLoaded" });
+
       postUp({
         type: "transformChange",
-        position: { x: pivot.position.x, y: pivot.position.y, z: pivot.position.z },
-        rotation: { x: pivot.rotation.x, y: pivot.rotation.y, z: pivot.rotation.z },
-        scale:    { x: pivot.scale.x,    y: pivot.scale.y,    z: pivot.scale.z },
+        position: {
+          x: pivot.position.x,
+          y: pivot.position.y,
+          z: pivot.position.z,
+        },
+        rotation: {
+          x: pivot.rotation.x,
+          y: pivot.rotation.y,
+          z: pivot.rotation.z,
+        },
+        scale: { x: pivot.scale.x, y: pivot.scale.y, z: pivot.scale.z },
         dimensions: { width: dims.x, height: dims.y, depth: dims.z },
       });
     },

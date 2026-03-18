@@ -108,13 +108,22 @@
       const urlParams = new URLSearchParams(window.location.search);
       const fileUrl = urlParams.get("file");
       const showcase = urlParams.get("showcase") === "true";
-      const showControls = urlParams.get("showControls") !== "false";
       const showDimensions = urlParams.get("showDimensions") === "true";
+
+      // controls=hide → no buttons
+      // controls=translate,rotate → only those buttons
+      // controls omitted → all buttons
+      const controlsParam = urlParams.get("controls");
+      const visibleControls = controlsParam === "hide"
+        ? []
+        : controlsParam
+          ? controlsParam.split(",").map((s) => s.trim())
+          : null; // null = show all
 
       const viewport = document.getElementById("viewport");
       const controlsDiv = document.getElementById("controls");
 
-      if (!showControls) controlsDiv.classList.add("hidden");
+      if (controlsParam === "hide") controlsDiv.classList.add("hidden");
 
       if (!fileUrl) {
         showError(
@@ -126,7 +135,7 @@
 
       postUp({ type: "viewerReady" });
 
-      const ctx = { fileUrl, viewport, controlsDiv, showDimensions };
+      const ctx = { fileUrl, viewport, controlsDiv, showDimensions, visibleControls };
       if (showcase) {
         await initShowcase(ctx);
       } else {

@@ -21,9 +21,11 @@
         overflow: hidden;
       }
       .container {
-        height: 100vh;
-        display: grid;
-        grid-template-rows: 1fr auto;
+        height: 100dvh;
+        /* display: grid; */
+        /* grid-template-rows: 1fr auto; */
+        overflow: hidden;
+        position: relative;
       }
       #viewport {
         width: 100%;
@@ -34,6 +36,7 @@
         display: block;
         width: 100% !important;
         height: 100% !important;
+        max-height: 100%;
       }
       model-viewer {
         width: 100%;
@@ -52,6 +55,9 @@
         text-align: center;
       }
       .controls {
+        position: absolute;
+        bottom: 0px;
+        left: 40px;
         display: flex;
         gap: 8px;
         padding: 8px;

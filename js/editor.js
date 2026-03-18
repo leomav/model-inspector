@@ -72,6 +72,9 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
   infoEl.className = "info";
   infoEl.textContent = "Loading model...";
 
+  const sizeEl = document.createElement("div");
+  sizeEl.className = "info";
+
   const modes = ["translate", "rotate", "scale"];
   const modeButtons = {};
   for (const mode of modes) {
@@ -82,6 +85,7 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
     controlsDiv.appendChild(btn);
   }
   controlsDiv.appendChild(infoEl);
+  controlsDiv.appendChild(sizeEl);
   setGizmoMode("translate");
 
   function setGizmoMode(mode) {
@@ -101,9 +105,13 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
 
       // Center mesh inside a pivot so it sits at world origin
       const box = new THREE.Box3().setFromObject(mesh);
-      const size = box.getSize(new THREE.Vector3()).length();
+      const dims = box.getSize(new THREE.Vector3());
+      const size = dims.length();
       const center = box.getCenter(new THREE.Vector3());
       mesh.position.sub(center);
+
+      const fmt = (n) => n.toFixed(3);
+      sizeEl.textContent = `Height: ${fmt(dims.y)}, Width: ${fmt(dims.x)}, Depth: ${fmt(dims.z)}`;
 
       const pivot = new THREE.Group();
       pivot.add(mesh);

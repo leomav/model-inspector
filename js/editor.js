@@ -101,7 +101,7 @@ export async function initEditor({
   // Controls bar
   const infoEl = document.createElement("div");
   infoEl.className = "info";
-  infoEl.textContent = "Loading model...";
+  if (!controlsHidden) infoEl.textContent = "Loading model...";
 
   const sizeEl = document.createElement("div");
   sizeEl.className = "info";
@@ -117,8 +117,9 @@ export async function initEditor({
     modeButtons[mode] = btn;
     controlsDiv.appendChild(btn);
   }
-  controlsDiv.appendChild(infoEl);
-  if (showDimensions) controlsDiv.appendChild(sizeEl);
+  const controlsHidden = Array.isArray(visibleControls) && visibleControls.length === 0;
+  if (!controlsHidden) controlsDiv.appendChild(infoEl);
+  if (!controlsHidden && showDimensions) controlsDiv.appendChild(sizeEl);
   setGizmoMode(TRANSFORM_MODES.translate);
 
   function setGizmoMode(mode) {
@@ -168,7 +169,7 @@ export async function initEditor({
       transformControls.attach(pivot);
       transformControls.setSize(1);
       model = pivot;
-      infoEl.textContent = "Model loaded. Use gizmo to transform.";
+      if (!controlsHidden) infoEl.textContent = "Model loaded. Use gizmo to transform.";
 
       postUp({ type: "modelLoaded" });
 

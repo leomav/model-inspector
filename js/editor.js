@@ -43,7 +43,7 @@ export async function initEditor({
   scene.add(dirLight);
 
   // Ground grid for spatial reference — resized after model loads
-  const grid = new THREE.GridHelper(10, 10, 0x444444, 0x333333);
+  const grid = new THREE.GridHelper(40, 40, 0x444444, 0x333333);
   // Position grid at model base; each cell = 1 real-world unit (meter)
   grid.scale.setScalar(1);
   scene.add(grid);

@@ -14,6 +14,7 @@ export async function initShowcase({ fileUrl, viewport, controlsDiv }) {
   const mv = document.createElement("model-viewer");
   mv.setAttribute("src", fileUrl);
   mv.setAttribute("auto-rotate", "");
+  mv.setAttribute("camera-controls", "");
   mv.setAttribute("exposure", "1");
   mv.setAttribute("shadow-intensity", "0.5");
   mv.setAttribute("alt", "3D model viewer");

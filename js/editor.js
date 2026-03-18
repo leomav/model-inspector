@@ -1,15 +1,12 @@
 import { postUp, showError } from "./messaging.js";
 
-const V = "0.183.2";
-const CDN = `https://esm.sh/three@${V}`;
-
 export async function initEditor({ fileUrl, viewport, controlsDiv }) {
   const [THREE, { GLTFLoader }, { OrbitControls }, { TransformControls }] =
     await Promise.all([
-      import(`${CDN}`),
-      import(`${CDN}/examples/jsm/loaders/GLTFLoader.js`),
-      import(`${CDN}/examples/jsm/controls/OrbitControls.js`),
-      import(`${CDN}/examples/jsm/controls/TransformControls.js`),
+      import("three"),
+      import("three/addons/loaders/GLTFLoader.js"),
+      import("three/addons/controls/OrbitControls.js"),
+      import("three/addons/controls/TransformControls.js"),
     ]);
 
   // Scene
@@ -33,15 +30,16 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
   dirLight.position.set(5, 5, 5);
   scene.add(dirLight);
 
+  // Ground grid for spatial reference — resized after model loads
+  const grid = new THREE.GridHelper(100, 100, 0x444444, 0x333333);
+  scene.add(grid);
+
   // Controls
   const orbitControls = new OrbitControls(camera, renderer.domElement);
   const transformControls = new TransformControls(camera, renderer.domElement);
   transformControls.setMode("translate");
-  scene.add(transformControls);
-
-  // Ground grid for spatial reference — resized after model loads
-  const grid = new THREE.GridHelper(100, 100, 0x444444, 0x333333);
-  scene.add(grid);
+  const gizmo = transformControls.getHelper();
+  scene.add(gizmo);
 
   // Prevent orbit while dragging gizmo
   transformControls.addEventListener("dragging-changed", (e) => {
@@ -125,6 +123,7 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
       camera.updateProjectionMatrix();
       orbitControls.target.set(0, 0, 0);
       orbitControls.update();
+      orbitControls.saveState();
 
       // Scale grid to model footprint
       const gridSize = size * 4;
@@ -132,6 +131,7 @@ export async function initEditor({ fileUrl, viewport, controlsDiv }) {
       grid.position.y = -size / 2;
 
       transformControls.attach(pivot);
+      transformControls.setSize(1);
       model = pivot;
       infoEl.textContent = "Model loaded. Use gizmo to transform.";
     },

@@ -86,12 +86,12 @@
       }
     </style>
     <script type="importmap">
-    {
-      "imports": {
-        "three": "https://esm.sh/three@0.183.2",
-        "three/addons/": "https://esm.sh/three@0.183.2/examples/jsm/"
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.183.2",
+          "three/addons/": "https://esm.sh/three@0.183.2/examples/jsm/"
+        }
       }
-    }
     </script>
   </head>
   <body>
@@ -107,18 +107,19 @@
 
       const urlParams = new URLSearchParams(window.location.search);
       const fileUrl = urlParams.get("file");
-      const showcase = urlParams.get("showcase") === "true";
+      const showcaseFreeLook = urlParams.get("freelook") === "true";
       const showDimensions = urlParams.get("showDimensions") === "true";
 
       // controls=hide → no buttons
       // controls=translate,rotate → only those buttons
       // controls omitted → all buttons
       const controlsParam = urlParams.get("controls");
-      const visibleControls = controlsParam === "hide"
-        ? []
-        : controlsParam
-          ? controlsParam.split(",").map((s) => s.trim())
-          : null; // null = show all
+      const visibleControls =
+        controlsParam === "hide"
+          ? []
+          : controlsParam
+            ? controlsParam.split(",").map((s) => s.trim())
+            : null; // null = show all
 
       const viewport = document.getElementById("viewport");
       const controlsDiv = document.getElementById("controls");
@@ -135,7 +136,13 @@
 
       postUp({ type: "viewerReady" });
 
-      const ctx = { fileUrl, viewport, controlsDiv, showDimensions, visibleControls };
+      const ctx = {
+        fileUrl,
+        viewport,
+        controlsDiv,
+        showDimensions,
+        visibleControls,
+      };
       if (showcase) {
         await initShowcase(ctx);
       } else {

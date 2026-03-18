@@ -43,7 +43,9 @@ export async function initEditor({
   scene.add(dirLight);
 
   // Ground grid for spatial reference — resized after model loads
-  const grid = new THREE.GridHelper(100, 100, 0x444444, 0x333333);
+  const grid = new THREE.GridHelper(10, 10, 0x444444, 0x333333);
+  // Position grid at model base; each cell = 1 real-world unit (meter)
+  grid.scale.setScalar(1);
   scene.add(grid);
 
   // Controls
@@ -66,15 +68,7 @@ export async function initEditor({
     sizeEl.textContent = `Height: ${fmt(baseDims.y * pivot.scale.y)}, Width: ${fmt(baseDims.x * pivot.scale.x)}, Depth: ${fmt(baseDims.z * pivot.scale.z)}`;
   }
 
-  transformControls.addEventListener("objectChange", () => {
-    if (transformControls.mode === TRANSFORM_MODES.scale && model) {
-      updateSizeDisplay(model);
-    }
-  });
-
-  // Post transformChange only when a gizmo drag actually ends
-  transformControls.addEventListener("dragging-changed", (e) => {
-    if (e.value || !model) return; // e.value=true means drag started, false means ended
+  function updateClientTransform(model) {
     postUp({
       type: "transformChange",
       position: {
@@ -96,6 +90,18 @@ export async function initEditor({
           }
         : null,
     });
+  }
+
+  transformControls.addEventListener("objectChange", () => {
+    if (transformControls.mode === TRANSFORM_MODES.scale && model) {
+      updateSizeDisplay(model);
+    }
+  });
+
+  // Post transformChange only when a gizmo drag actually ends
+  transformControls.addEventListener("dragging-changed", (e) => {
+    if (e.value || !model) return; // e.value=true means drag started, false means ended
+    updateClientTransform(model);
   });
 
   // Controls bar
@@ -166,32 +172,14 @@ export async function initEditor({
       orbitControls.update();
       orbitControls.saveState();
 
-      // Scale grid to model footprint
-      const gridSize = size * 4;
-      grid.scale.setScalar(gridSize / 10);
-      grid.position.y = -size / 2;
-
       transformControls.attach(pivot);
       transformControls.setSize(1);
       model = pivot;
       if (!controlsHidden)
         infoEl.textContent = "Model loaded. Use gizmo to transform.";
 
-      postUp({ type: "modelLoaded" });
-
       postUp({
-        type: "transformChange",
-        position: {
-          x: pivot.position.x,
-          y: pivot.position.y,
-          z: pivot.position.z,
-        },
-        rotation: {
-          x: pivot.rotation.x,
-          y: pivot.rotation.y,
-          z: pivot.rotation.z,
-        },
-        scale: { x: pivot.scale.x, y: pivot.scale.y, z: pivot.scale.z },
+        type: "modelLoaded",
         dimensions: { width: dims.x, height: dims.y, depth: dims.z },
       });
     },
@@ -222,6 +210,7 @@ export async function initEditor({
     if (event.source === window) return;
     const { type, ...data } = event.data || {};
     if (!type || !model) return;
+    console.log("Received message:", type, data);
     switch (type) {
       case "setPosition":
         model.position.set(data.x ?? 0, data.y ?? 0, data.z ?? 0);
@@ -231,6 +220,24 @@ export async function initEditor({
         break;
       case "setScale":
         model.scale.set(data.x ?? 1, data.y ?? 1, data.z ?? 1);
+        break;
+      case "initTransform":
+        model.position.set(
+          data.transform.position?.x ?? 0,
+          data.transform.position?.y ?? 0,
+          data.transform.position?.z ?? 0,
+        );
+        model.rotation.set(
+          data.transform.rotation?.x ?? 0,
+          data.transform.rotation?.y ?? 0,
+          data.transform.rotation?.z ?? 0,
+        );
+        model.scale.set(
+          data.transform.scale?.x ?? 1,
+          data.transform.scale?.y ?? 1,
+          data.transform.scale?.z ?? 1,
+        );
+        updateClientTransform(model);
         break;
       case "setGizmoMode":
         if (modes.includes(data.mode)) setGizmoMode(data.mode);

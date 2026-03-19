@@ -1,0 +1,30 @@
+.controls {
+  position: absolute;
+  bottom: 0px;
+  left: 40px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.controls.hidden {
+  display: none;
+}
+.controls button {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background: #222;
+  color: white;
+  cursor: pointer;
+}
+.controls button.active {
+  background: #4a90d9;
+}
+.controls .info {
+  margin-left: 8px;
+  font-size: 13px;
+  opacity: 0.9;
+}

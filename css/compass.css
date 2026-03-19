@@ -1,0 +1,98 @@
+/* --- Rose (rotating image) --- */
+#compass-rose {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 100px;
+  height: 100px;
+  z-index: 5;
+  pointer-events: none;
+}
+#compass-rose img {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Strip (PUBG-style horizontal bar) --- */
+#compass-strip {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+  height: 36px;
+  overflow: hidden;
+  z-index: 5;
+  pointer-events: none;
+  mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20%, black 80%, transparent 100%);
+}
+#compass-strip-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  user-select: none;
+}
+.compass-strip-track {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+.compass-tick {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 10px;
+  height: 100%;
+  position: relative;
+  flex-shrink: 0;
+}
+.compass-tick::before {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  width: 1px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.4);
+}
+.compass-tick.major::before {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.7);
+}
+.compass-tick.cardinal::before {
+  height: 14px;
+  background: #ffffff;
+}
+.compass-tick span {
+  position: absolute;
+  top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  transform: translateX(-50%);
+  left: 50%;
+  letter-spacing: 0;
+}
+.compass-tick.cardinal span {
+  color: #ffffff;
+  font-size: 11px;
+}
+.compass-tick.north span {
+  color: #ff5555;
+}
+#compass-strip-center {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 20px;
+  background: rgba(255, 220, 0, 0.9);
+  pointer-events: none;
+  z-index: 6;
+}

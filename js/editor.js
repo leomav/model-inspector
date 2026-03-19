@@ -12,7 +12,9 @@ export async function initEditor({
   controlsDiv,
   showDimensions,
   visibleControls = Object.values(TRANSFORM_MODES),
-  compassEl = null,
+  compassMode = null,
+  compassRoseEl = null,
+  compassStripEl = null,
 }) {
   const [THREE, { GLTFLoader }, { OrbitControls }, { TransformControls }] =
     await Promise.all([
@@ -202,14 +204,27 @@ export async function initEditor({
 
   // Render loop
   const _camDir = new THREE.Vector3();
+  // Strip is 3 copies × 360 ticks × 10px each; center on copy index 1
+  const STRIP_DEG_WIDTH = 10; // px per degree
+  const STRIP_COPY_WIDTH = 360 * STRIP_DEG_WIDTH;
   function animate() {
     requestAnimationFrame(animate);
     orbitControls.update();
     renderer.render(scene, camera);
-    if (compassEl) {
+    if (compassRoseEl || compassStripEl) {
       camera.getWorldDirection(_camDir);
       const angle = Math.atan2(_camDir.x, -_camDir.z) * (180 / Math.PI);
-      compassEl.style.transform = `rotate(${angle}deg)`;
+      if (compassRoseEl) {
+        compassRoseEl.style.transform = `rotate(${angle}deg)`;
+      }
+      if (compassStripEl) {
+        // Normalize angle to [0, 360)
+        const norm = ((angle % 360) + 360) % 360;
+        // Center of strip viewport is 180px (half of 360px container)
+        // Offset so that current degree is centered; start from copy 1
+        const offset = STRIP_COPY_WIDTH + norm * STRIP_DEG_WIDTH - 180;
+        compassStripEl.firstElementChild.style.transform = `translateX(${-offset}px)`;
+      }
     }
   }
   animate();

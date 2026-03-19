@@ -4,122 +4,10 @@
     <meta charset="utf-8" />
     <title>Model Viewer</title>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <style>
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        background: #111;
-        color: #eee;
-        font-family:
-          system-ui,
-          -apple-system,
-          "Segoe UI",
-          Roboto,
-          "Helvetica Neue",
-          Arial;
-        overflow: hidden;
-      }
-      .container {
-        height: 100dvh;
-        /* display: grid; */
-        /* grid-template-rows: 1fr auto; */
-        overflow: hidden;
-        position: relative;
-      }
-      #viewport {
-        width: 100%;
-        height: 100%;
-        position: relative;
-      }
-      #viewport canvas {
-        display: block;
-        width: 100% !important;
-        height: 100% !important;
-        max-height: 100%;
-      }
-      model-viewer {
-        width: 100%;
-        height: 100%;
-        --poster-color: transparent;
-        background: #111;
-      }
-      .error-message {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: #f88;
-        font-size: 15px;
-        padding: 24px;
-        text-align: center;
-      }
-      .controls {
-        position: absolute;
-        bottom: 0px;
-        left: 40px;
-        display: flex;
-        gap: 8px;
-        padding: 8px;
-        background: rgba(0, 0, 0, 0.3);
-        align-items: center;
-        flex-wrap: wrap;
-      }
-      .controls.hidden {
-        display: none;
-      }
-      .controls button {
-        padding: 6px 10px;
-        border-radius: 6px;
-        border: none;
-        background: #222;
-        color: white;
-        cursor: pointer;
-      }
-      .controls button.active {
-        background: #4a90d9;
-      }
-      .controls .info {
-        margin-left: 8px;
-        font-size: 13px;
-        opacity: 0.9;
-      }
-      #compass {
-        position: absolute;
-        top: 12px;
-        left: 12px;
-        width: 100px;
-        height: 100px;
-        z-index: 5;
-        pointer-events: none;
-      }
-      #compass img {
-        width: 100%;
-        height: 100%;
-      }
-      #viewer-loader {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #111;
-        z-index: 10;
-      }
-      .loader-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid #333;
-        border-top-color: #eee;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="./css/base.css" />
+    <link rel="stylesheet" href="./css/controls.css" />
+    <link rel="stylesheet" href="./css/compass.css" />
+    <link rel="stylesheet" href="./css/loader.css" />
     <script type="importmap">
       {
         "imports": {
@@ -132,9 +20,13 @@
   <body>
     <div class="container">
       <div id="viewport"></div>
-      <div id="compass" style="display: none">
+      <div id="compass-rose" style="display: none">
         <img src="compass.webp" alt="compass" />
       </div>
+      <div id="compass-strip" style="display: none">
+        <div id="compass-strip-inner"></div>
+      </div>
+      <div id="compass-strip-center" style="display: none"></div>
       <div class="controls" id="controls"></div>
     </div>
 
@@ -147,7 +39,8 @@
       const fileUrl = urlParams.get("file");
       const showcaseFreeLook = urlParams.get("freelook") === "true";
       const showDimensions = urlParams.get("showDimensions") === "true";
-      const showCompass = urlParams.get("compass") === "true";
+      // compass=rose | compass=strip | omitted → none
+      const compassMode = urlParams.get("compass"); // "rose" | "strip" | null
 
       // controls=hide → no buttons
       // controls=translate,rotate → only those buttons
@@ -162,10 +55,40 @@
 
       const viewport = document.getElementById("viewport");
       const controlsDiv = document.getElementById("controls");
-      const compassContainerEl = document.getElementById("compass");
-      const compassEl = compassContainerEl.querySelector("img");
 
-      if (showCompass) compassContainerEl.style.display = "block";
+      const compassRoseEl = document.getElementById("compass-rose");
+      const compassStripEl = document.getElementById("compass-strip");
+      const compassStripCenterEl = document.getElementById("compass-strip-center");
+
+      if (compassMode === "rose") {
+        compassRoseEl.style.display = "block";
+      } else if (compassMode === "strip") {
+        compassStripEl.style.display = "block";
+        compassStripCenterEl.style.display = "block";
+        // Build the repeating strip (3 full rotations so we can always scroll to center)
+        const cardinals = { 0: "N", 45: "NE", 90: "E", 135: "SE", 180: "S", 225: "SW", 270: "W", 315: "NW" };
+        const inner = document.getElementById("compass-strip-inner");
+        // 3 copies for seamless looping
+        for (let copy = 0; copy < 3; copy++) {
+          const track = document.createElement("div");
+          track.className = "compass-strip-track";
+          for (let deg = 0; deg < 360; deg++) {
+            const tick = document.createElement("div");
+            const label = cardinals[deg];
+            const isCardinal = label !== undefined;
+            const isMajor = deg % 10 === 0;
+            tick.className = "compass-tick" + (isCardinal ? " cardinal" : isMajor ? " major" : "");
+            if (deg === 0) tick.classList.add("north");
+            if (label || isMajor) {
+              const span = document.createElement("span");
+              span.textContent = label || deg;
+              tick.appendChild(span);
+            }
+            track.appendChild(tick);
+          }
+          inner.appendChild(track);
+        }
+      }
 
       if (controlsParam === "hide") controlsDiv.classList.add("hidden");
 
@@ -185,13 +108,16 @@
         controlsDiv,
         showDimensions,
         visibleControls,
-        compassEl: showCompass ? compassEl : null,
+        compassMode,
+        compassRoseEl: compassMode === "rose" ? compassRoseEl.querySelector("img") : null,
+        compassStripEl: compassMode === "strip" ? compassStripEl : null,
       };
       if (showcaseFreeLook) {
         await initShowcase(ctx);
       } else {
         await initEditor(ctx);
       }
+
     </script>
   </body>
 </html>

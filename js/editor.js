@@ -34,11 +34,13 @@ export async function initEditor({
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
   viewport.appendChild(renderer.domElement);
 
   // Lighting
   scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 5);
   dirLight.position.set(5, 5, 5);
   scene.add(dirLight);
 

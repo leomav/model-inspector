@@ -12,6 +12,7 @@ export async function initEditor({
   controlsDiv,
   showDimensions,
   visibleControls = Object.values(TRANSFORM_MODES),
+  compassEl = null,
 }) {
   const [THREE, { GLTFLoader }, { OrbitControls }, { TransformControls }] =
     await Promise.all([
@@ -200,10 +201,16 @@ export async function initEditor({
   });
 
   // Render loop
+  const _camDir = new THREE.Vector3();
   function animate() {
     requestAnimationFrame(animate);
     orbitControls.update();
     renderer.render(scene, camera);
+    if (compassEl) {
+      camera.getWorldDirection(_camDir);
+      const angle = Math.atan2(_camDir.x, -_camDir.z) * (180 / Math.PI);
+      compassEl.style.transform = `rotate(${angle}deg)`;
+    }
   }
   animate();
 

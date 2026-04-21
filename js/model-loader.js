@@ -2,8 +2,11 @@ import { showError } from "./messaging.js";
 
 function getExtension(url) {
   try {
-    const pathname = new URL(url).pathname.toLowerCase();
-    const match = pathname.match(/\.(glb|gltf|ply)$/);
+    const { pathname, searchParams } = new URL(url);
+    // Some URLs encode the real filename in a query param (e.g. ?file=model.ply)
+    const candidate =
+      searchParams.get("file") || searchParams.get("name") || pathname;
+    const match = candidate.toLowerCase().match(/\.(glb|gltf|ply)/);
     return match ? match[1] : "glb";
   } catch {
     return "glb";

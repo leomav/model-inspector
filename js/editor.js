@@ -1,4 +1,5 @@
 import { postUp, showError, showLoader } from "./messaging.js";
+import { loadModel } from "./model-loader.js";
 
 const TRANSFORM_MODES = {
   translate: "translate",
@@ -16,13 +17,11 @@ export async function initEditor({
   compassRoseEl = null,
   compassStripEl = null,
 }) {
-  const [THREE, { GLTFLoader }, { OrbitControls }, { TransformControls }] =
-    await Promise.all([
-      import("three"),
-      import("three/addons/loaders/GLTFLoader.js"),
-      import("three/addons/controls/OrbitControls.js"),
-      import("three/addons/controls/TransformControls.js"),
-    ]);
+  const [THREE, { OrbitControls }, { TransformControls }] = await Promise.all([
+    import("three"),
+    import("three/addons/controls/OrbitControls.js"),
+    import("three/addons/controls/TransformControls.js"),
+  ]);
 
   // Scene
   const scene = new THREE.Scene();
@@ -146,12 +145,12 @@ export async function initEditor({
   const hideLoader = showLoader(viewport);
 
   let model = null;
-  const loader = new GLTFLoader();
-  loader.load(
+  loadModel(
     fileUrl,
-    (gltf) => {
+    THREE,
+    viewport,
+    (mesh) => {
       hideLoader();
-      const mesh = gltf.scene;
 
       // Center mesh inside a pivot so it sits at world origin
       const box = new THREE.Box3().setFromObject(mesh);
@@ -188,7 +187,6 @@ export async function initEditor({
         dimensions: { width: dims.x, height: dims.y, depth: dims.z },
       });
     },
-    undefined,
     (err) => {
       hideLoader();
       showError(viewport, "Error loading model: " + (err?.message || err));
